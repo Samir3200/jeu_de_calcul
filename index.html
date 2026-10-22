@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Maths Chronométré</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            text-align: center;
+            width: 400px;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 20px; }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        .timer-bar-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            height: 10px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .timer-bar {
+            width: 100%;
+            height: 100%;
+            background: #4ade80;
+            transition: width 0.1s linear;
+        }
+        .question-box {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1.2rem;
+            width: 60%;
+            border: none;
+            border-radius: 8px;
+            text-align: center;
+            outline: none;
+            margin-bottom: 15px;
+        }
+        button {
+            background: #4ade80;
+            color: #1e293b;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #22c55e; color: #fff; }
+        .hidden { display: none; }
+        #message { margin-top: 15px; font-weight: bold; min-height: 24px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🧠 Duel Mathématique 🧠</h1>
+        
+        <!-- Écran de démarrage -->
+        <div id="screen-start">
+            <p>6 secondes par calcul. Le niveau augmente avec votre score !</p>
+            <button onclick="lancerJeu()">Commencer</button>
+        </div>
+
+        <!-- Écran du jeu -->
+        <div id="screen-game" class="hidden">
+            <div class="stats">
+                <span id="txt-niveau">Niveau 1</span>
+                <span id="txt-score">Score : 0</span>
+            </div>
+            
+            <div class="timer-bar-container">
+                <div id="timer-bar" class="timer-bar"></div>
+            </div>
+
+            <div id="txt-question" class="question-box">? + ? = ?</div>
+
+            <form id="form-reponse" onsubmit="verifierReponse(event)">
+                <input type="number" id="input-reponse" autocomplete="off" autofocus required>
+                <br>
+                <button type="submit">Valider</button>
+            </form>
+
+            <div id="message"></div>
+        </div>
+
+        <!-- Écran de fin -->
+        <div id="screen-gameover" class="hidden">
+            <h2>Partie Terminée ! 🎮</h2>
+            <p id="final-score" style="font-size: 1.2rem; margin: 20px 0;"></p>
+            <button onclick="lancerJeu()">Rejouer</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let niveau = 1;
+        let bonneReponse = 0;
+        let tempsRestant = 6.0;
+        let intervalTimer = null;
+        let jeuActif = false;
+
+        const screenStart = document.getElementById('screen-start');
+        const screenGame = document.getElementById('screen-game');
+        const screenGameover = document.getElementById('screen-gameover');
+        const txtQuestion = document.getElementById('txt-question');
+        const txtScore = document.getElementById('txt-score');
+        const txtNiveau = document.getElementById('txt-niveau');
+        const inputReponse = document.getElementById('input-reponse');
+        const timerBar = document.getElementById('timer-bar');
+        const msgDiv = document.getElementById('message');
+        const finalScore = document.getElementById('final-score');
+
+        function lancerJeu() {
+            score = 0;
+            niveau = 1;
+            screenStart.classList.add('hidden');
+            screenGameover.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            prochaineQuestion();
+        }
+
+        function prochaineQuestion() {
+            if (score < 5) {
+                niveau = 1;
+                let a = Math.floor(Math.random() * 10) + 1;
+                let b = Math.floor(Math.random() * 10) + 1;
+                bonneReponse = a + b;
+                txtQuestion.innerText = `${a} + ${b} = ?`;
+            } else if (score < 10) {
+                niveau = 2;
+                let a = Math.floor(Math.random() * 15) + 5;
+                let b = Math.floor(Math.random() * 15) + 1;
+                let op = Math.random() > 0.5 ? '+' : '-';
+                if (op === '-' && a < b) [a, b] = [b, a]; // Éviter les négatifs simples
+                bonneReponse = op === '+' ? a + b : a - b;
+                txtQuestion.innerText = `${a} ${op} ${b} = ?`;
+            } else {
+                niveau = 3;
+                let a = Math.floor(Math.random() * 9) + 2;
+                let b = Math.floor(Math.random() * 9) + 2;
+                bonneReponse = a * b;
+                txtQuestion.innerText = `${a} × ${b} = ?`;
+            }
+
+            txtScore.innerText = `Score : ${score}`;
+            txtNiveau.innerText = `Niveau ${niveau}`;
+            inputReponse.value = '';
+            inputReponse.focus();
+
+            // Gestion du chrono (6 secondes)
+            clearInterval(intervalTimer);
+            tempsRestant = 6.0;
+            let tempsTotal = 6.0;
+
+            intervalTimer = setInterval(() => {
+                tempsRestant -= 0.05;
+                let pourcentage = (tempsRestant / tempsTotal) * 100;
+                timerBar.style.width = pourcentage + '%';
+
+                if (tempsRestant <= 0) {
+                    clearInterval(intervalTimer);
+                    terminerPartie("⏰ Temps écoulé !");
+                }
+            }, 50);
+        }
+
+        function verifierReponse(event) {
+            event.preventDefault();
+            clearInterval(intervalTimer);
+
+            let valeurSaisie = parseInt(inputReponse.value);
+
+            if (valeurSaisie === bonneReponse) {
+                score++;
+                msgDiv.style.color = "#4ade80";
+                msgDiv.innerText = "✅ Correct !";
+                setTimeout(() => {
+                    msgDiv.innerText = "";
+                    prochaineQuestion();
+                }, 400);
+            } else {
+                terminerPartie(`❌ Faux ! C'était ${bonneReponse}`);
+            }
+        }
+
+        function terminerPartie(raison) {
+            clearInterval(intervalTimer);
+            screenGame.classList.add('hidden');
+            screenGameover.classList.remove('hidden');
+            finalScore.innerHTML = `${raison}<br>Votre score final : <strong>${score}</strong>`;
+        }
+    </script>
+</body>
+</html>
