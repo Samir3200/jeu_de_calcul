@@ -64,7 +64,7 @@ def lancer_jeu():
             temps_ecoule = fin - debut
 
             # Vérifier si le joueur a dépassé les 6 secondes
-            if temps_ecoule > 6.0:
+            if temps_ecoule > 10.0:
                 print(f"⏰ Temps écoulé ! (Vous avez mis {temps_ecoule:.1f} secondes).")
                 en_jeu = False
                 break
